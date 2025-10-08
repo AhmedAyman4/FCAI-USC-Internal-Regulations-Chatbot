@@ -43,14 +43,14 @@ for page in docs:
 
 # Configure and split the text
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=800,
-    chunk_overlap=100,
+    chunk_size=3000,
+    chunk_overlap=1000,
     separators=["\n\n", "\n", ".", " "]
 )
 chunks = splitter.split_documents(docs)
 
 # Initialize multilingual embedding model
-model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+model_name = "intfloat/multilingual-e5-base"
 model_kwargs = {'device': 'cpu'} # Or 'cuda'
 encode_kwargs = {'normalize_embeddings': True}
 hf = HuggingFaceEmbeddings(
@@ -105,10 +105,15 @@ Answer:"""
     prompt = ChatPromptTemplate.from_template(prompt_template)
 
     # Create retriever interface
+    # retriever = vectorstore.as_retriever(
+    #     search_type="similarity",
+    #     search_kwargs={"k": 6}
+    # )
+
     retriever = vectorstore.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 6}
-    )
+    search_type="mmr",  # Maximal Marginal Relevance
+    search_kwargs={"k": 10, "fetch_k": 20, "lambda_mult": 0.5}
+)
 
     # Create a RetrievalQA chain with input_key specified
     qa_chain = RetrievalQA.from_chain_type(
@@ -171,7 +176,7 @@ Answer:"""
             with gr.Column(scale=1):
                 query_input = gr.Textbox(
                     label="📝 Your Question",
-                    placeholder="مثال: ما هي شروط القبول؟\nExample: What are the admission requirements?",
+                    placeholder="مثال: كم عدد الساعات المعتمدة الإجمالية المطلوبة للتخرج من برنامج بكالوريوس علوم الحاسب؟\nExample: What is the percentage allocated for the final exam in a regular course according to the evaluation system?",
                     lines=5,
                     elem_classes="input-textbox"
                 )
