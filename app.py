@@ -86,7 +86,7 @@ except ModuleNotFoundError:
 if google_api_key:
     google_llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
-        temperature=0.1,
+        temperature=0.0,  # Changed from 0.1 for more consistent answers,
         max_tokens=None,
         timeout=None,
         max_retries=2,
@@ -95,13 +95,29 @@ if google_api_key:
     )
 
     # Define the prompt template - FIXED to use {question} instead of {query}
-    prompt_template = """Use the following pieces of context to answer the user's question.
-If you don't know the answer, just say that you don't know, don't try to make up an answer.
-----------------
-{context}
-----------------
-Question: {question}
-Answer:"""
+    prompt_template = """
+    أنت مساعد ذكي ومتعمق في التحليل، متخصص في الإجابة على الأسئلة المتعلقة باللائحة الداخلية لكلية الحاسبات والذكاء الاصطناعي.
+    
+    You are an intelligent and thoughtful assistant specialized in answering questions about the Faculty of Computer and Artificial Intelligence Internal Regulations.
+    
+    **Instructions:**
+    1. Analyze the provided context carefully and extract key information.
+    2. If the answer is not stated explicitly, infer it logically **based on the meaning and structure** of the context.
+    3. Combine information from multiple parts of the context when necessary to form a coherent, detailed answer.
+    4. Use reasoning and general understanding of academic or regulatory structures to fill in small gaps **only when it makes sense**.
+    5. Always clarify if a part of your answer is inferred or partially uncertain (for example: "يبدو من السياق أن ..." / "It can be inferred that ...").
+    6. Be slightly verbose — provide clear explanations or examples when helpful.
+    7. Maintain a professional and informative tone.
+    8. Answer in the same language as the question (Arabic or English).
+    9. Avoid adding any external information unrelated to the provided context.
+    
+    **Context from Regulations:**
+    {context}
+    
+    **Question:** {question}
+    
+    **Answer (reasoned and detailed):**
+    """
     prompt = ChatPromptTemplate.from_template(prompt_template)
 
     # Create retriever interface
@@ -111,9 +127,13 @@ Answer:"""
     # )
 
     retriever = vectorstore.as_retriever(
-    search_type="mmr",  # Maximal Marginal Relevance
-    search_kwargs={"k": 10, "fetch_k": 20, "lambda_mult": 0.5}
-)
+        search_type="mmr",
+        search_kwargs={
+            "k": 8,  # Reduced from 10 for more focused context
+            "fetch_k": 25,  # Increased for better initial candidates
+            "lambda_mult": 0.7  # Higher diversity
+        }
+    )
 
     # Create a RetrievalQA chain with input_key specified
     qa_chain = RetrievalQA.from_chain_type(
